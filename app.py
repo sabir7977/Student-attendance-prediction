@@ -33,25 +33,30 @@ st.set_page_config(
 # ============================================================
 
 def add_features(X):
+
     X = X.copy()
 
+    # Study + Sleep
     X["study_plus_sleep"] = (
         X["study_hours"] + X["sleep_hours"]
     )
 
+    # Study - Travel
     X["study_minus_travel"] = (
-        X["study_hours"] -
-        X["travel_time_minutes"] / 20
+        X["study_hours"]
+        - X["travel_time_minutes"] / 20
     )
 
+    # Travel / Study
     X["travel_per_study"] = (
-        X["travel_time_minutes"] /
-        (X["study_hours"] + 1)
+        X["travel_time_minutes"]
+        / (X["study_hours"] + 1)
     )
 
+    # Sleep - Travel
     X["sleep_minus_travel"] = (
-        X["sleep_hours"] -
-        X["travel_time_minutes"] / 20
+        X["sleep_hours"]
+        - X["travel_time_minutes"] / 20
     )
 
     return X
@@ -65,7 +70,7 @@ def add_features(X):
 def get_trained_model():
 
     # --------------------------------------------------------
-    # Load dataset
+    # LOAD DATASET
     # --------------------------------------------------------
 
     df = pd.read_csv(
@@ -73,7 +78,7 @@ def get_trained_model():
     )
 
     # --------------------------------------------------------
-    # Separate features and target
+    # SEPARATE FEATURES AND TARGET
     # --------------------------------------------------------
 
     X = df.drop(
@@ -86,10 +91,49 @@ def get_trained_model():
 
     X = add_features(X)
 
-    y = df["attendance"]
+    # --------------------------------------------------------
+    # TARGET VARIABLE
+    # --------------------------------------------------------
+
+    y = df["attendance"].copy()
+
+    # Normalize text labels
+    if y.dtype == "object":
+
+        y = (
+            y.astype(str)
+            .str.strip()
+            .str.lower()
+        )
+
+        # Convert Present / Absent to 1 / 0
+        if set(y.unique()).issubset(
+            {"present", "absent"}
+        ):
+
+            y = y.map({
+                "absent": 0,
+                "present": 1
+            })
+
+    # Convert numeric-looking values
+    else:
+
+        y = pd.to_numeric(
+            y,
+            errors="coerce"
+        )
+
+    # Check for missing target values
+    if y.isna().any():
+
+        raise ValueError(
+            "The attendance column contains "
+            "invalid or missing values."
+        )
 
     # --------------------------------------------------------
-    # Identify categorical and numerical columns
+    # IDENTIFY CATEGORICAL AND NUMERICAL COLUMNS
     # --------------------------------------------------------
 
     categorical_cols = X.select_dtypes(
@@ -106,11 +150,13 @@ def get_trained_model():
 
     preprocessor = ColumnTransformer(
         transformers=[
+
             (
                 "num",
                 "passthrough",
                 numerical_cols
             ),
+
             (
                 "cat",
                 OneHotEncoder(
@@ -123,15 +169,17 @@ def get_trained_model():
     )
 
     # --------------------------------------------------------
-    # RANDOM FOREST
+    # RANDOM FOREST MODEL
     # --------------------------------------------------------
 
     pipeline = Pipeline(
         steps=[
+
             (
                 "preprocessor",
                 preprocessor
             ),
+
             (
                 "classifier",
                 RandomForestClassifier(
@@ -168,22 +216,28 @@ def get_trained_model():
     )
 
     # --------------------------------------------------------
-    # EVALUATION
+    # MODEL EVALUATION
     # --------------------------------------------------------
 
-    y_pred = pipeline.predict(X_test)
+    y_pred = pipeline.predict(
+        X_test
+    )
 
+    # Accuracy
     acc = accuracy_score(
         y_test,
         y_pred
     )
 
+    # Classification report
     report = classification_report(
         y_test,
         y_pred,
-        output_dict=True
+        output_dict=True,
+        zero_division=0
     )
 
+    # Confusion matrix
     cm = confusion_matrix(
         y_test,
         y_pred
@@ -203,12 +257,14 @@ def get_trained_model():
         .get_feature_names_out()
     )
 
-    importance = rf_model.feature_importances_
+    importance = (
+        rf_model.feature_importances_
+    )
 
     simple_names = []
 
     # --------------------------------------------------------
-    # Convert encoded names into simple names
+    # CONVERT ENCODED NAMES INTO SIMPLE NAMES
     # --------------------------------------------------------
 
     for feature in encoded_features:
@@ -274,10 +330,12 @@ def get_trained_model():
         else:
             simple_name = feature
 
-        simple_names.append(simple_name)
+        simple_names.append(
+            simple_name
+        )
 
     # --------------------------------------------------------
-    # Create feature importance DataFrame
+    # FEATURE IMPORTANCE DATAFRAME
     # --------------------------------------------------------
 
     feature_importance_df = pd.DataFrame({
@@ -285,7 +343,7 @@ def get_trained_model():
         "Importance": importance
     })
 
-    # Combine encoded categorical features
+    # Combine one-hot encoded features
     feature_importance_df = (
         feature_importance_df
         .groupby(
@@ -309,14 +367,23 @@ def get_trained_model():
     # ========================================================
 
     dataset_info = {
+
         "total_records": len(df),
+
         "train_records": len(X_train),
+
         "test_records": len(X_test),
+
         "features_count": X.shape[1],
+
         "accuracy": acc,
+
         "report": report,
+
         "confusion_matrix": cm,
-        "feature_importance": feature_importance_df
+
+        "feature_importance":
+            feature_importance_df
     }
 
     return pipeline, dataset_info
@@ -365,12 +432,21 @@ with col1:
 
     gender = st.selectbox(
         "Gender",
-        ["male", "female"]
+        [
+            "male",
+            "female"
+        ]
     )
 
     course = st.selectbox(
         "Course",
-        ["bca", "bsc", "bcom", "ba", "bba"]
+        [
+            "bca",
+            "bsc",
+            "bcom",
+            "ba",
+            "bba"
+        ]
     )
 
     year = st.selectbox(
@@ -393,7 +469,10 @@ with col1:
 
     internet_access = st.selectbox(
         "Internet Access",
-        ["yes", "no"]
+        [
+            "yes",
+            "no"
+        ]
     )
 
 
@@ -405,12 +484,18 @@ with col2:
 
     hostel_resident = st.selectbox(
         "Hostel Resident",
-        ["yes", "no"]
+        [
+            "yes",
+            "no"
+        ]
     )
 
     class_type = st.selectbox(
         "Class Type",
-        ["offline", "online"]
+        [
+            "offline",
+            "online"
+        ]
     )
 
     weather = st.selectbox(
@@ -456,7 +541,7 @@ if st.button(
 ):
 
     # --------------------------------------------------------
-    # Create input DataFrame
+    # CREATE INPUT DATAFRAME
     # --------------------------------------------------------
 
     input_data = pd.DataFrame([
@@ -465,19 +550,26 @@ if st.button(
             "gender": gender,
             "course": course,
             "year": year,
-            "parent_education": parent_education,
-            "internet_access": internet_access,
-            "hostel_resident": hostel_resident,
-            "class_type": class_type,
+            "parent_education":
+                parent_education,
+            "internet_access":
+                internet_access,
+            "hostel_resident":
+                hostel_resident,
+            "class_type":
+                class_type,
             "weather": weather,
-            "study_hours": study_hours,
-            "sleep_hours": sleep_hours,
-            "travel_time_minutes": travel_time_minutes
+            "study_hours":
+                study_hours,
+            "sleep_hours":
+                sleep_hours,
+            "travel_time_minutes":
+                travel_time_minutes
         }
     ])
 
     # --------------------------------------------------------
-    # Add engineered features
+    # ADD ENGINEERED FEATURES
     # --------------------------------------------------------
 
     input_data = add_features(
@@ -485,7 +577,7 @@ if st.button(
     )
 
     # --------------------------------------------------------
-    # Prediction
+    # MAKE PREDICTION
     # --------------------------------------------------------
 
     pred = model.predict(
@@ -493,7 +585,7 @@ if st.button(
     )[0]
 
     # --------------------------------------------------------
-    # Prediction probability
+    # GET PROBABILITY
     # --------------------------------------------------------
 
     proba = model.predict_proba(
@@ -506,73 +598,135 @@ if st.button(
 
     st.markdown("---")
 
-    # ========================================================
-# HANDLE PREDICTION PROBABILITIES
-# ========================================================
+    st.subheader(
+        "📌 Prediction Result"
+    )
 
-classes = list(model.classes_)
+    # --------------------------------------------------------
+    # HANDLE PREDICTION PROBABILITIES
+    # --------------------------------------------------------
 
-# Display probabilities correctly
-if set(str(c).lower() for c in classes) == {"present", "absent"}:
+    classes = list(
+        model.classes_
+    )
 
     present_probability = 0.0
     absent_probability = 0.0
 
-    for i, class_name in enumerate(classes):
+    # Normalize class names
+    normalized_classes = [
+        str(c).strip().lower()
+        for c in classes
+    ]
 
-        if str(class_name).lower() == "present":
-            present_probability = proba[i]
+    # --------------------------------------------------------
+    # CASE 1:
+    # Present / Absent labels
+    # --------------------------------------------------------
 
-        elif str(class_name).lower() == "absent":
-            absent_probability = proba[i]
+    if (
+        "present" in normalized_classes
+        and
+        "absent" in normalized_classes
+    ):
 
-else:
+        for i, class_name in enumerate(classes):
 
-    # If dataset uses 0 and 1
-    # Assume:
+            class_name = (
+                str(class_name)
+                .strip()
+                .lower()
+            )
+
+            if class_name == "present":
+
+                present_probability = (
+                    proba[i]
+                )
+
+            elif class_name == "absent":
+
+                absent_probability = (
+                    proba[i]
+                )
+
+    # --------------------------------------------------------
+    # CASE 2:
+    # Numeric labels
+    #
     # 0 = Absent
     # 1 = Present
+    # --------------------------------------------------------
 
-    if 0 in classes and 1 in classes:
+    elif (
+        0 in classes
+        and
+        1 in classes
+    ):
 
-        absent_probability = proba[
-            classes.index(0)
-        ]
+        absent_probability = (
+            proba[
+                classes.index(0)
+            ]
+        )
 
-        present_probability = proba[
-            classes.index(1)
-        ]
+        present_probability = (
+            proba[
+                classes.index(1)
+            ]
+        )
+
+    # --------------------------------------------------------
+    # FALLBACK
+    # --------------------------------------------------------
 
     else:
 
-        # Fallback for any other two-class labels
         absent_probability = proba[0]
+
         present_probability = proba[1]
-    
 
-    # --------------------------------------------------------
-    # Display prediction
-    # --------------------------------------------------------
+    # ========================================================
+    # DISPLAY PREDICTION
+    # ========================================================
 
-    if str(pred).lower() == "present":
+    pred_normalized = (
+        str(pred)
+        .strip()
+        .lower()
+    )
+
+    # Present prediction
+    if (
+        pred_normalized == "present"
+        or
+        pred == 1
+    ):
 
         st.success(
-            f"**Status: STUDENT IS LIKELY TO BE PRESENT** "
+            f"**Status: STUDENT IS LIKELY "
+            f"TO BE PRESENT** "
             f"(Confidence: "
             f"{present_probability * 100:.1f}%)"
         )
 
+    # Absent prediction
     else:
 
         st.error(
-            f"**Status: STUDENT IS LIKELY TO BE ABSENT** "
+            f"**Status: STUDENT IS LIKELY "
+            f"TO BE ABSENT** "
             f"(Confidence: "
             f"{absent_probability * 100:.1f}%)"
         )
 
-    # --------------------------------------------------------
-    # Probability bar
-    # --------------------------------------------------------
+    # ========================================================
+    # PROBABILITY BAR
+    # ========================================================
+
+    st.markdown(
+        "### Attendance Probability"
+    )
 
     st.progress(
         float(present_probability)
@@ -596,6 +750,10 @@ with st.expander(
     "📊 View Model & Training Details",
     expanded=False
 ):
+
+    # ========================================================
+    # MODEL OVERVIEW
+    # ========================================================
 
     st.subheader(
         "Model Overview"
@@ -667,7 +825,9 @@ with st.expander(
         "the model predicted Present and Absent students."
     )
 
-    cm = info["confusion_matrix"]
+    cm = info[
+        "confusion_matrix"
+    ]
 
     fig_cm, ax_cm = plt.subplots(
         figsize=(4, 3)
@@ -688,9 +848,13 @@ with st.expander(
     )
 
     # Display values inside matrix
-    for i in range(cm.shape[0]):
+    for i in range(
+        cm.shape[0]
+    ):
 
-        for j in range(cm.shape[1]):
+        for j in range(
+            cm.shape[1]
+        ):
 
             ax_cm.text(
                 j,
@@ -702,11 +866,15 @@ with st.expander(
 
     # Use actual model class names
     ax_cm.set_xticks(
-        range(len(model.classes_))
+        range(
+            len(model.classes_)
+        )
     )
 
     ax_cm.set_yticks(
-        range(len(model.classes_))
+        range(
+            len(model.classes_)
+        )
     )
 
     ax_cm.set_xticklabels(
@@ -740,7 +908,10 @@ with st.expander(
         "feature_importance"
     ].copy()
 
-    # Create graph
+    # --------------------------------------------------------
+    # CREATE FEATURE IMPORTANCE GRAPH
+    # --------------------------------------------------------
+
     fig, ax = plt.subplots(
         figsize=(9, 6)
     )
@@ -764,7 +935,6 @@ with st.expander(
 
     plt.tight_layout()
 
-    # Display graph
     st.pyplot(
         fig
     )
