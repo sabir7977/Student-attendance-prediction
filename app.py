@@ -1,3 +1,4 @@
+```python
 import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -29,40 +30,6 @@ st.set_page_config(
 
 
 # ============================================================
-# FEATURE ENGINEERING
-# ============================================================
-
-def add_features(X):
-
-    X = X.copy()
-
-    # Study + Sleep
-    X["study_plus_sleep"] = (
-        X["study_hours"] + X["sleep_hours"]
-    )
-
-    # Study - Travel
-    X["study_minus_travel"] = (
-        X["study_hours"]
-        - X["travel_time_minutes"] / 20
-    )
-
-    # Travel / Study
-    X["travel_per_study"] = (
-        X["travel_time_minutes"]
-        / (X["study_hours"] + 1)
-    )
-
-    # Sleep - Travel
-    X["sleep_minus_travel"] = (
-        X["sleep_hours"]
-        - X["travel_time_minutes"] / 20
-    )
-
-    return X
-
-
-# ============================================================
 # TRAIN AND CACHE MODEL
 # ============================================================
 
@@ -81,6 +48,7 @@ def get_trained_model():
     # SEPARATE FEATURES AND TARGET
     # --------------------------------------------------------
 
+    # Original 12 features are used
     X = df.drop(
         columns=[
             "student_id",
@@ -88,8 +56,6 @@ def get_trained_model():
             "absence_reason"
         ]
     )
-
-    X = add_features(X)
 
     # --------------------------------------------------------
     # TARGET VARIABLE
@@ -183,15 +149,14 @@ def get_trained_model():
             (
                 "classifier",
                 RandomForestClassifier(
-    n_estimators=300,
-    max_depth=None,
-    min_samples_split=2,
-    min_samples_leaf=1,
-    max_features="sqrt",
-    random_state=42,
-    n_jobs=-1
-)
-                
+                    n_estimators=300,
+                    max_depth=None,
+                    min_samples_split=2,
+                    min_samples_leaf=1,
+                    max_features="sqrt",
+                    random_state=42,
+                    n_jobs=-1
+                )
             )
         ]
     )
@@ -253,12 +218,14 @@ def get_trained_model():
         "classifier"
     ]
 
+    # Get encoded feature names
     encoded_features = (
         pipeline
         .named_steps["preprocessor"]
         .get_feature_names_out()
     )
 
+    # Get importance values
     importance = (
         rf_model.feature_importances_
     )
@@ -317,18 +284,6 @@ def get_trained_model():
         elif feature.startswith("travel_time_minutes"):
             simple_name = "Travel Time"
 
-        elif feature.startswith("study_plus_sleep"):
-            simple_name = "Study + Sleep"
-
-        elif feature.startswith("study_minus_travel"):
-            simple_name = "Study - Travel"
-
-        elif feature.startswith("travel_per_study"):
-            simple_name = "Travel / Study"
-
-        elif feature.startswith("sleep_minus_travel"):
-            simple_name = "Sleep - Travel"
-
         else:
             simple_name = feature
 
@@ -341,7 +296,9 @@ def get_trained_model():
     # --------------------------------------------------------
 
     feature_importance_df = pd.DataFrame({
+
         "Feature": simple_names,
+
         "Importance": importance
     })
 
@@ -376,6 +333,7 @@ def get_trained_model():
 
         "test_records": len(X_test),
 
+        # Original 12 features
         "features_count": X.shape[1],
 
         "accuracy": acc,
@@ -549,34 +507,38 @@ if st.button(
     input_data = pd.DataFrame([
         {
             "age": age,
+
             "gender": gender,
+
             "course": course,
+
             "year": year,
+
             "parent_education":
                 parent_education,
+
             "internet_access":
                 internet_access,
+
             "hostel_resident":
                 hostel_resident,
+
             "class_type":
                 class_type,
-            "weather": weather,
+
+            "weather":
+                weather,
+
             "study_hours":
                 study_hours,
+
             "sleep_hours":
                 sleep_hours,
+
             "travel_time_minutes":
                 travel_time_minutes
         }
     ])
-
-    # --------------------------------------------------------
-    # ADD ENGINEERED FEATURES
-    # --------------------------------------------------------
-
-    input_data = add_features(
-        input_data
-    )
 
     # --------------------------------------------------------
     # MAKE PREDICTION
@@ -787,10 +749,11 @@ with st.expander(
     )
 
     st.write(
-        "- **Estimators:** 500 Trees\n"
-        "- **Max Depth:** 8\n"
-        "- **Minimum Samples Leaf:** 3\n"
-        "- **Max Features:** 0.5\n"
+        "- **Estimators:** 300 Trees\n"
+        "- **Max Depth:** None\n"
+        "- **Minimum Samples Split:** 2\n"
+        "- **Minimum Samples Leaf:** 1\n"
+        "- **Max Features:** sqrt\n"
         "- **Train / Test Split:** 80% / 20%\n"
         "- **Features Count:** "
         f"{info['features_count']} predictors\n"
@@ -961,3 +924,4 @@ with st.expander(
         use_container_width=True,
         hide_index=True
     )
+```
