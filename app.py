@@ -506,26 +506,49 @@ if st.button(
 
     st.markdown("---")
 
-    # Handle string labels safely
-    classes = list(
-        model.classes_
-    )
+    # ========================================================
+# HANDLE PREDICTION PROBABILITIES
+# ========================================================
 
-    # Find probabilities
+classes = list(model.classes_)
+
+# Display probabilities correctly
+if set(str(c).lower() for c in classes) == {"present", "absent"}:
+
     present_probability = 0.0
     absent_probability = 0.0
 
     for i, class_name in enumerate(classes):
 
-        class_name_lower = str(
-            class_name
-        ).lower()
-
-        if class_name_lower == "present":
+        if str(class_name).lower() == "present":
             present_probability = proba[i]
 
-        elif class_name_lower == "absent":
+        elif str(class_name).lower() == "absent":
             absent_probability = proba[i]
+
+else:
+
+    # If dataset uses 0 and 1
+    # Assume:
+    # 0 = Absent
+    # 1 = Present
+
+    if 0 in classes and 1 in classes:
+
+        absent_probability = proba[
+            classes.index(0)
+        ]
+
+        present_probability = proba[
+            classes.index(1)
+        ]
+
+    else:
+
+        # Fallback for any other two-class labels
+        absent_probability = proba[0]
+        present_probability = proba[1]
+    
 
     # --------------------------------------------------------
     # Display prediction
