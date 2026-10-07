@@ -191,7 +191,7 @@ def get_trained_model():
     random_state=42,
     n_jobs=-1
 )
-                )
+                
             )
         ]
     )
