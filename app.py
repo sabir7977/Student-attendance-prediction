@@ -149,7 +149,7 @@ def get_trained_model():
             (
                 "classifier",
                 RandomForestClassifier(
-                    n_estimators=500,
+                    n_estimators=200,
                     max_depth=None,
                     min_samples_split=2,
                     min_samples_leaf=1,
